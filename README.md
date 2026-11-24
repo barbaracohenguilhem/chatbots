@@ -1,71 +1,42 @@
-<a href="https://chatbot.ai-sdk.dev/demo">
-  <img alt="Chatbot" src="app/(chat)/opengraph-image.png">
-  <h1 align="center">Chatbot</h1>
-</a>
+# Família SP — protótipo executável local
 
-<p align="center">
-    Chatbot (formerly AI Chatbot) is a free, open-source template built with Next.js and the AI SDK that helps you quickly build powerful chatbot applications.
-</p>
+Este projeto é um MVP de análise de PDFs fornecidos por usuário autorizado. **Não é um sistema de produção**, não acessa TJSP/e-SAJ/eproc, não tem OCR, controle multiusuário, pesquisa jurisprudencial online, extração de prazos ou auditoria independente automatizada.
 
-<p align="center">
-  <a href="https://chatbot.ai-sdk.dev/docs"><strong>Read Docs</strong></a> ·
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#model-providers"><strong>Model Providers</strong></a> ·
-  <a href="#deploy-your-own"><strong>Deploy Your Own</strong></a> ·
-  <a href="#running-locally"><strong>Running locally</strong></a>
-</p>
-<br/>
-
-## Features
-
-- [Next.js](https://nextjs.org) App Router
-  - Advanced routing for seamless navigation and performance
-  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
-- [AI SDK](https://ai-sdk.dev/docs/introduction)
-  - Unified API for generating text, structured objects, and tool calls with LLMs
-  - Hooks for building dynamic chat and generative user interfaces
-  - Supports OpenAI, Anthropic, Google, xAI, and other model providers via AI Gateway
-- [shadcn/ui](https://ui.shadcn.com)
-  - Styling with [Tailwind CSS](https://tailwindcss.com)
-  - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
-- Data Persistence
-  - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
-- [Auth.js](https://authjs.dev)
-  - Simple and secure authentication
-
-## Model Providers
-
-This template uses the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) to access multiple AI models through a unified interface. Models are configured in `lib/ai/models.ts` with per-model provider routing. Included models: Mistral, Moonshot, DeepSeek, OpenAI, and xAI.
-
-### AI Gateway Authentication
-
-**For Vercel deployments**: Authentication is handled automatically via OIDC tokens.
-
-**For non-Vercel deployments**: You need to provide an AI Gateway API key by setting the `AI_GATEWAY_API_KEY` environment variable in your `.env.local` file.
-
-With the [AI SDK](https://ai-sdk.dev/docs/introduction), you can also switch to direct LLM providers like [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://ai-sdk.dev/providers/ai-sdk-providers) with just a few lines of code.
-
-## Deploy Your Own
-
-You can deploy your own version of Chatbot to Vercel with one click:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/templates/next.js/chatbot)
-
-## Running locally
-
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
-
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
-
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
-3. Download your environment variables: `vercel env pull`
+## Iniciar
 
 ```bash
-pnpm install
-pnpm db:migrate # Setup database or apply latest database changes
-pnpm dev
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# Edite .env com chave de API, token forte e diretório privado
+set -a; source .env; set +a
+uvicorn app:app --host 127.0.0.1 --port 8000
 ```
 
-Your app template should now be running on [localhost:3000](http://localhost:3000).
+Acesse `http://127.0.0.1:8000/docs` e informe o cabeçalho `x-agent-token` nas chamadas. Exemplos:
+
+```bash
+curl -X POST http://127.0.0.1:8000/documents -H "x-agent-token: $FAMILY_AGENT_TOKEN" -F 'file=@autos.pdf'
+curl -X POST http://127.0.0.1:8000/analyze -H "x-agent-token: $FAMILY_AGENT_TOKEN" -H 'Content-Type: application/json' -d '{"question":"Quais decisões sobre guarda aparecem nos documentos?"}'
+```
+
+## Segurança e limitações
+
+- Dados sensíveis são enviados à API do modelo durante a análise. Verifique contratos, política de retenção e base legal antes de enviar autos reais.
+- Não exponha a porta na internet. O token único é apenas uma barreira mínima de MVP.
+- O armazenamento local não está criptografado pelo aplicativo. Use disco criptografado e backups seguros.
+- PDFs escaneados exigem OCR; a API informa quantas páginas ficaram sem texto.
+- O ranking lexical é simplificado e pode deixar de recuperar informações decisivas.
+- Antes de uso real: autenticação individual, autorização por caso, isolamento de famílias, criptografia, auditoria, revisão de LGPD, validação de citações e testes.
+- Os arquivos `.env` e `private_data/` devem permanecer fora do controle de versão.
+
+## Evolução recomendada
+
+1. Ingestão de DOCX, e-mails e OCR com conferência visual.
+2. Entidades e eventos estruturados com relações e proveniência.
+3. Busca híbrida (BM25 + embeddings) com reranking e checagem de cobertura.
+4. Pesquisa oficial de jurisprudência com registro de URL, órgão, data e status.
+5. Fluxo investigador → pesquisador → contraditor → auditor, com aprovações humanas.
+6. Alertas de prazos apenas após validação profissional de intimação e calendário.
+7. Testes com casos anonimizados e avaliação de precisão, recall e taxa de citação inválida.
